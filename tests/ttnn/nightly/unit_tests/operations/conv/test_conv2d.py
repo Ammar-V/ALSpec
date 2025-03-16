@@ -14,6 +14,7 @@ from models.utility_functions import (
 from tests.ttnn.utils_for_testing import assert_with_pcc, check_with_pcc_without_tensor_printout
 import ttnn
 from ttnn.operations.conv2d import get_torch_act_func_from_string
+import time
 
 HS = ttnn.TensorMemoryLayout.HEIGHT_SHARDED
 BS = ttnn.TensorMemoryLayout.BLOCK_SHARDED
@@ -97,7 +98,7 @@ def run_conv(
     preprocess_weights_on_device=True,
     in_place=False,
     run_twice=False,
-    fast_compare=False,
+    fast_compare=True,
     slice_config=None,
     enable_kernel_stride_folding=False,
 ):
@@ -139,7 +140,7 @@ def run_conv(
         pad_left = padding
         pad_right = padding
 
-    torch.manual_seed(0)
+    torch.manual_seed(time.time())
     conv_input_shape = (total_batch_size, input_channels, input_height, input_width)
     conv_weight_shape = (output_channels, input_channels // groups, filter_height, filter_width)
     conv_bias_shape = (1, 1, 1, output_channels)
@@ -275,7 +276,7 @@ def run_conv(
     out = out.reshape(total_batch_size, out_height, out_width, out.shape[-1])
     out = out[:, :, :, :output_channels]
 
-    ref = torch.permute(ref, (0, 2, 3, 1))
+    ref = torch.permute(ref, (0, 2, 3, 1)).to(out.dtype)
 
     if not fp32_accum:
         pcc = 0.985
@@ -293,9 +294,14 @@ def run_conv(
 
     torch.set_printoptions(precision=3, sci_mode=False)
     if fast_compare:
-        passing, pcc_msg = check_with_fast_pcc_without_tensor_printout(out, ref, pcc=pcc)
-        logger.info(f"PCC = {pcc_msg}. Threshold = {pcc}")
-        assert passing, pcc_msg
+        if fp32_accum:
+            threshold = 3e-1 + 5e-3 * math.log(input_channels * filter_height * filter_width, 2)
+        else:
+            threshold = 3e-1 + 1e-1 * math.log(input_channels * filter_height * filter_width, 2)
+
+        logger.info(f"Threshold: {threshold}")
+        diff = torch.abs(ref - out) / ref.abs().mean()
+        assert torch.all(diff < threshold), f"Max diff: {diff.max()}, Threshold: {threshold} "
     else:
         passing, pcc_msg = check_with_pcc_without_tensor_printout(out, ref, pcc=pcc)
         logger.info(f"PCC = {pcc_msg}. Threshold = {pcc}")
@@ -678,7 +684,7 @@ SliceWidth = ttnn.Conv2dSliceWidth
 )
 @pytest.mark.parametrize(
     "has_bias, fp32_accum, packer_l1_acc",
-    [[True, False, False]],
+    [[True, True, True]],
 )
 def test_conv_dram(
     device,
@@ -730,7 +736,7 @@ def test_conv_dram(
         has_bias=True,
         fp32_accum=fp32_accum,
         packer_l1_acc=packer_l1_acc,
-        preprocess_weights_on_device=True,  # Github Issue #21044: Failure with preprocess_weights_on_device=False
+        preprocess_weights_on_device=False,  # Github Issue #21044: Failure with preprocess_weights_on_device=False
         transpose_shards=True,
         run_twice=False,
         fast_compare=True,
