@@ -38,6 +38,7 @@ std::vector<ScalarInfo> get_bf16_avg_pool_config_scalars(
     uint32_t out_y,
     uint32_t pad_h,
     uint32_t pad_w,
+    bool count_include_pad,
     uint32_t out_nhw_per_core,
     std::optional<int32_t> divisor_override);
 

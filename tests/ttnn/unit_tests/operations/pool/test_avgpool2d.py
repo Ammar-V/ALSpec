@@ -16,6 +16,78 @@ def tensor_map():
     return tensor_map
 
 
+def randomize_tensor(tensor_map, tensor_shape):
+    tensor_shape = tuple(tensor_shape)
+    if tensor_shape in tensor_map.keys():
+        torch_tensor = tensor_map[tensor_shape]
+    else:
+        torch_tensor = torch.rand(tensor_shape, dtype=torch.bfloat16)
+    return torch_tensor
+
+
+def run_avg_pool2d(
+    device,
+    tensor_map,
+    input_shape,
+    kernel_size,
+    stride,
+    padding,
+    ceil_mode,
+    divisor_override,
+    count_include_pad,
+    shard_scheme,
+):
+    ## Test setup for both.
+    in_n, in_c, in_h, in_w = input_shape
+    torch.manual_seed(0)
+    torch_input = randomize_tensor(tensor_map, input_shape)
+
+    ## Test setup for Actual.
+    ttnn_input = ttnn.from_torch(torch_input, layout=ttnn.ROW_MAJOR_LAYOUT, device=device)
+    ttnn_input = ttnn.permute(ttnn_input, (0, 2, 3, 1))
+    ttnn_input = ttnn.reshape(ttnn_input, (1, 1, in_n * in_h * in_w, in_c))
+
+    ## Get Expected output.
+    torch_output = torch.nn.functional.avg_pool2d(
+        torch_input,
+        kernel_size,
+        stride,
+        padding,
+        ceil_mode=ceil_mode,
+        count_include_pad=count_include_pad,
+        divisor_override=divisor_override,
+    )
+
+    ## Get Actual output
+    ttnn_output = ttnn.avg_pool2d(
+        input_tensor=ttnn_input,
+        batch_size=in_n,
+        input_h=in_h,
+        input_w=in_w,
+        channels=in_c,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        ceil_mode=ceil_mode,
+        divisor_override=divisor_override,
+        count_include_pad=count_include_pad,
+        memory_config=ttnn.DRAM_MEMORY_CONFIG,
+        applied_shard_scheme=shard_scheme,
+    )
+
+    ## Test teardown for Actual.
+    ttnn_output = ttnn_output.reshape(
+        torch_output.shape[0], torch_output.shape[2], torch_output.shape[3], torch_output.shape[1]
+    )
+    ttnn_output = ttnn.permute(ttnn_output, (0, 3, 1, 2))  # N, C, H, W
+    ttnn_output = ttnn.to_torch(ttnn_output)
+
+    ## Assertion
+    assert_with_pcc(torch_output, ttnn_output, 0.99)
+    allclose = torch.allclose(ttnn_output, torch_output, rtol=0.02)
+    assert allclose, " Reference and output tensor are not close"
+
+
 @skip_for_blackhole("Nigthly CI tests failing, ticket #20492")
 @pytest.mark.parametrize("device_params", [{"l1_small_size": 24576}], indirect=True)
 @pytest.mark.parametrize(
@@ -52,6 +124,10 @@ def tensor_map():
     ],
 )
 @pytest.mark.parametrize(
+    "count_include_pad",
+    [True, False],
+)
+@pytest.mark.parametrize(
     "divisor_override",
     [
         None,
@@ -67,7 +143,7 @@ def tensor_map():
     ],
 )
 def test_avg_pool2d_post_commit(
-    device, tensor_map, input_shape, kernel_size, stride, padding, ceil_mode, divisor_override, shard_scheme
+    device, tensor_map, input_shape, kernel_size, stride, padding, ceil_mode, divisor_override, count_include_pad, shard_scheme
 ):
     run_avg_pool2d(
         device=device,
@@ -77,6 +153,7 @@ def test_avg_pool2d_post_commit(
         stride=stride,
         padding=padding,
         ceil_mode=ceil_mode,
+        count_include_pad=count_include_pad,
         divisor_override=divisor_override,
         shard_scheme=shard_scheme,
     )
