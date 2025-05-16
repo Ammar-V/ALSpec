@@ -88,14 +88,14 @@ void MAIN {
     constexpr bool neginf_srca_maxpool = (REDUCE_OP == PoolType::MAX) ? true : false;
     constexpr bool zero_srca_avgpool = (REDUCE_OP == PoolType::SUM) ? true : false;
 
-    uint32_t num_of_ele = nsticks_per_core;
     uint32_t scalar_cnt = 1;
     uint32_t diff_index = 0;
     uint32_t time_for_change = 0;
+    uint32_t runtime_args_before = 1;
     if (!one_scalar_per_core) {
-        num_of_ele = get_arg_val<uint32_t>(0);
-        scalar_cnt = get_arg_val<uint32_t>(1);
-        time_for_change = get_arg_val<uint32_t>(2 + diff_index);
+        scalar_cnt = get_arg_val<uint32_t>(0);
+        time_for_change = get_arg_val<uint32_t>(runtime_args_before + diff_index);
+        DPRINT << "time for change " << time_for_change << ENDL();
     }
 
     tilizeA_B_reduce_init<neginf_srca_maxpool, zero_srca_avgpool>(

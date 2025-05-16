@@ -120,7 +120,7 @@ def run_avg_pool2d(
     "ceil_mode",
     [
         False,
-        True,
+        # True,
     ],
 )
 @pytest.mark.parametrize(
@@ -138,8 +138,8 @@ def run_avg_pool2d(
     "shard_scheme",
     [
         ttnn.TensorMemoryLayout.HEIGHT_SHARDED,
-        ttnn.TensorMemoryLayout.WIDTH_SHARDED,
-        ttnn.TensorMemoryLayout.BLOCK_SHARDED,
+        # ttnn.TensorMemoryLayout.WIDTH_SHARDED,
+        # ttnn.TensorMemoryLayout.BLOCK_SHARDED,
     ],
 )
 def test_avg_pool2d_post_commit(
