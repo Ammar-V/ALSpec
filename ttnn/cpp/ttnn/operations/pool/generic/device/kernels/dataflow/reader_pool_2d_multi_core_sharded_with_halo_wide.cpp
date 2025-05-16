@@ -49,9 +49,9 @@ void kernel_main() {
     // compile time args
     // BF16 value packed in UINT32. For maxpool, value is 1, for avgpool value is 1/kernel_size.
 
-    constexpr uint32_t in_nblocks_c = get_compile_time_arg_val(11);
+    constexpr uint32_t in_nblocks_c = get_compile_time_arg_val(12);
 
-    constexpr uint32_t ceil_pad_w = get_compile_time_arg_val(14);
+    constexpr uint32_t ceil_pad_w = get_compile_time_arg_val(15);
 
     constexpr uint32_t TILE_WIDTH = 32;
     constexpr uint32_t MAX_ELE_PER_REDUCTION = 512;  // TILE_WIDTH * 8 * numbytes

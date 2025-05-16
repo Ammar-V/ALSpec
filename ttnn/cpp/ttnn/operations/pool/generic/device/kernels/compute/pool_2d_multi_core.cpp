@@ -88,10 +88,16 @@ void MAIN {
     constexpr bool neginf_srca_maxpool = (REDUCE_OP == PoolType::MAX) ? true : false;
     constexpr bool zero_srca_avgpool = (REDUCE_OP == PoolType::SUM) ? true : false;
 
-    uint32_t num_od_ele = get_arg_val<uint32_t>(0);
-    uint32_t scalar_cnt = get_arg_val<uint32_t>(1);
+    uint32_t num_of_ele = nsticks_per_core;
+    uint32_t scalar_cnt = 1;
     uint32_t diff_index = 0;
-    uint32_t time_for_change = get_arg_val<uint32_t>(2 + diff_index);
+    uint32_t time_for_change = 0;
+    if (!one_scalar_per_core) {
+        num_of_ele = get_arg_val<uint32_t>(0);
+        scalar_cnt = get_arg_val<uint32_t>(1);
+        time_for_change = get_arg_val<uint32_t>(2 + diff_index);
+    }
+
     tilizeA_B_reduce_init<neginf_srca_maxpool, zero_srca_avgpool>(
         in_cb_id_0, in_scalar_cb_id_0, max_tiles_per_iter, out_cb_id, num_faces_in_tile, window_size_hw);
     pack_untilize_dst_init_short<max_tiles_per_iter>(out_cb_id, num_out_rows, num_faces_in_tile);
@@ -118,6 +124,9 @@ void MAIN {
     }
     if constexpr (one_scalar_per_core) {
         cb_pop_front(in_scalar_cb_id_0, 1);
+    }
+    if (one_scalar_per_core) {
+        cb_pop_front(in_scalar_cb_id, 1);
     }
 }
 
