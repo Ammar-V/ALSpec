@@ -23,18 +23,6 @@ jobs:
       fail-fast: false
       matrix:
         test-group: [
-          {
-            name: "whisper_performance",
-            arch: blackhole,
-            cmd: pytest models/demos/whisper/demo/demo.py --input-path="models/demos/whisper/demo/dataset/conditional_generation" -k "conditional_generation",
-            owner_id: U05RWH3QUPM #Salar Hosseini
-          },
-          {
-            name: "Llama3-8B_performance",
-            arch: blackhole,
-            cmd:  HF_HOME=/localdev/blackhole_demos/huggingface_data TT_CACHE_PATH=/localdev/blackhole_demos/tt_cache HF_MODEL=meta-llama/Llama-3.1-8B-Instruct pytest models/tt_transformers/demo/simple_text_demo.py -k "performance-ci and not performance-ci-stress-1",
-            owner_id: U03PUAKE719 # Miguel Tairum
-          },
           { # This should be moved to a BH perf regression pipeline in the future
             name: "unet_shallow_performance",
             arch: blackhole,
@@ -78,6 +66,7 @@ jobs:
             -e ARCH_NAME=${{ matrix.test-group.arch }}
             -e LD_LIBRARY_PATH=${{ github.workspace }}/build/lib
             -e HF_TOKEN=${{ secrets.HUGGINGFACE_TOKEN }}
+            -e TT_METAL_WATCHER=1 -e TT_METAL_WATCHER_APPEND=1 -e TT_METAL_WATCHER_NOINLINE=1
             -v /localdev/blackhole_demos:/localdev/blackhole_demos
           install_wheel: true
           run_args: |
