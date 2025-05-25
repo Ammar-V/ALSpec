@@ -1590,8 +1590,9 @@ void noc_semaphore_set(volatile tt_l1_ptr uint32_t* sem_addr, uint32_t val) {
  */
 // clang-format on
 template <bool write_to_stream_reg = false, bool posted = false>
-FORCE_INLINE void noc_inline_dw_write_impl(
+FORCE_INLINE void noc_inline_dw_write(
     uint64_t addr, uint32_t val, uint8_t be = 0xF, uint8_t noc = noc_index, uint8_t vc = NOC_UNICAST_WRITE_VC) {
+    WAYPOINT("NWIW");
     DEBUG_SANITIZE_NOC_ADDR(noc, addr, 4);
     // This API does not support DRAM addresses
     DEBUG_SANITIZE_NO_DRAM_ADDR(noc, addr, 4);
@@ -1651,42 +1652,7 @@ FORCE_INLINE void noc_inline_dw_write_impl(
         posted  // posted
     );
 #endif
-}
-
-template <bool write_to_stream_reg = false, bool posted = false>
-FORCE_INLINE void noc_inline_dw_write(
-    uint64_t addr, uint32_t val, uint8_t be = 0xF, uint8_t noc = noc_index, uint8_t vc = NOC_UNICAST_WRITE_VC) {
-    WAYPOINT("NWIW");
-    noc_inline_dw_write_impl<write_to_stream_reg, posted>(addr, val, be, noc, vc);
     WAYPOINT("NWID");
-}
-template <bool write_to_stream_reg = false, bool posted = false>
-FORCE_INLINE void noc_inline_dw_write2(
-    uint64_t addr, uint32_t val, uint8_t be = 0xF, uint8_t noc = noc_index, uint8_t vc = NOC_UNICAST_WRITE_VC) {
-    WAYPOINT("NWIW");
-    noc_inline_dw_write_impl<write_to_stream_reg, posted>(addr, val, be, noc, vc);
-    WAYPOINT("NWId");
-}
-template <bool write_to_stream_reg = false, bool posted = false>
-FORCE_INLINE void noc_inline_dw_write3(
-    uint64_t addr, uint32_t val, uint8_t be = 0xF, uint8_t noc = noc_index, uint8_t vc = NOC_UNICAST_WRITE_VC) {
-    WAYPOINT("NWIW");
-    noc_inline_dw_write_impl<write_to_stream_reg, posted>(addr, val, be, noc, vc);
-    WAYPOINT("NWid");
-}
-template <bool write_to_stream_reg = false, bool posted = false>
-FORCE_INLINE void noc_inline_dw_write4(
-    uint64_t addr, uint32_t val, uint8_t be = 0xF, uint8_t noc = noc_index, uint8_t vc = NOC_UNICAST_WRITE_VC) {
-    WAYPOINT("NWIW");
-    noc_inline_dw_write_impl<write_to_stream_reg, posted>(addr, val, be, noc, vc);
-    WAYPOINT("Nwid");
-}
-template <bool write_to_stream_reg = false, bool posted = false>
-FORCE_INLINE void noc_inline_dw_write5(
-    uint64_t addr, uint32_t val, uint8_t be = 0xF, uint8_t noc = noc_index, uint8_t vc = NOC_UNICAST_WRITE_VC) {
-    WAYPOINT("NWIW");
-    noc_inline_dw_write_impl<write_to_stream_reg, posted>(addr, val, be, noc, vc);
-    WAYPOINT("nwid");
 }
 
 // on BH this api can only write to stream register, writing to L1 will cause hangs!

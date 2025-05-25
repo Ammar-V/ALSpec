@@ -51,7 +51,7 @@ WorkerToFabricMuxSender<FABRIC_MUX_CHANNEL_NUM_BUFFERS> build_connection_to_fabr
         local_teardown_ptr,
         local_buffer_index_address,
         mux_channel_credits_stream_id,
-        StreamId{0},  // my stream id
+        StreamId{0},  // my stream id -- As a sender I currently do NOT get acks over stream regs
         write_reg_cmd_buf,
         write_at_cmd_buf);
 }
@@ -64,6 +64,7 @@ FORCE_INLINE void wait_for_fabric_endpoint_ready(
     uint64_t noc_addr = get_noc_addr(fabric_ep_x, fabric_ep_y, fabric_ep_status_address);
     auto local_fabric_ep_status_ptr = reinterpret_cast<volatile tt_l1_ptr uint32_t*>(local_fabric_ep_status_address);
 
+    local_fabric_ep_status_ptr[0] = tt::tt_fabric::FabricEndpointStatus::TERMINATED;
     while (local_fabric_ep_status_ptr[0] != tt::tt_fabric::FabricEndpointStatus::READY_FOR_TRAFFIC) {
         noc_async_read_one_packet(noc_addr, local_fabric_ep_status_address, 4);
         noc_async_read_barrier();

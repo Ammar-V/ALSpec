@@ -169,7 +169,7 @@ struct EdmChannelWorkerInterface {
     // Only used for persistent connections (i.e. upstream is EDM)
     template <bool enable_ring_support>
     FORCE_INLINE void update_persistent_connection_copy_of_free_slots(int32_t inc_val) {
-        noc_inline_dw_write4<true, true>(
+        noc_inline_dw_write<true, true>(
             this->cached_worker_semaphore_address,
             inc_val << REMOTE_DEST_BUF_WORDS_FREE_INC,
             0xf,
@@ -177,7 +177,7 @@ struct EdmChannelWorkerInterface {
     }
 
     FORCE_INLINE void notify_worker_of_read_counter_update() {
-        noc_inline_dw_write5<false, true>(
+        noc_inline_dw_write<false, true>(
             this->cached_worker_semaphore_address,
             local_read_counter.counter,
             0xf,
