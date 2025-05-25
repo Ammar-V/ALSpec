@@ -9,6 +9,36 @@ from tests.ttnn.unit_tests.operations.eltwise.backward.utility_funcs import comp
 from tests.ttnn.utils_for_testing import assert_with_pcc
 
 
+def test_unary_max_int32_summa(device):
+    num_elements = torch.prod(torch.tensor(torch.Size([1, 1, 32, 32]))).item()
+    torch_input = torch.linspace(5, -5, num_elements, dtype=torch.int32)
+    torch_input = torch_input[:num_elements].reshape(torch.Size([1, 1, 32, 32]))
+
+    golden_function = ttnn.get_golden_function(ttnn.maximum)
+    golden = golden_function(torch_input, torch.full(torch.Size([1, 1, 32, 32]), 100), device=device)
+
+    tt_in = ttnn.from_torch(
+        torch_input,
+        dtype=ttnn.int32,
+        device=device,
+        layout=ttnn.TILE_LAYOUT,
+        memory_config=ttnn.DRAM_MEMORY_CONFIG,
+    )
+    print("Returning scalar value as result : ")
+    print("Input : ", tt_in)
+    scalar = 0
+    tt_result = ttnn.maximum(tt_in, scalar)
+    print("\t When scalar is 0 , result is : ", tt_result)
+    scalar = -1
+    tt_result = ttnn.maximum(tt_in, scalar)
+    print("\t When scalar is -1 , result is : ", tt_result)
+    scalar = 100
+    tt_result = ttnn.maximum(tt_in, scalar)
+    print("\t When scalar is 100 , result is : ", tt_result)
+    comp_pass = compare_equal([tt_result], [golden])
+    assert comp_pass
+
+
 @pytest.mark.parametrize(
     "input_shapes",
     (
