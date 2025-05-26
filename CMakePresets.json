@@ -55,7 +55,7 @@
         "name": "dev",
         "configurePreset": "default",
         "configuration": "RelWithDebInfo",
-        "targets": ["all"]
+        "targets": ["all", "package"]
       },
       {
         "name": "dev-gcc",
