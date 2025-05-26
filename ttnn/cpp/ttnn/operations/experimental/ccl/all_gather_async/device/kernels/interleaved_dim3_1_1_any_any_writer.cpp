@@ -117,11 +117,23 @@ void kernel_main() {
         uint32_t num_pages_to_read = std::min(tiles_to_read - tiles_read, packet_size_in_pages);
         cb_wait_front(cb_forward_id, num_pages_to_read);
         size_t l1_read_addr = get_read_ptr(cb_forward_id);
+
         for (uint32_t j = 0; j < num_pages_to_read; j += contig_pages_advanced) {
             uint64_t noc0_dest_noc_addr_first_tile = get_noc_addr(
                 tile_id_start + row_offset + pages_read_in_row, output_addrgen, 0 /*offset*/, 0 /*noc_id*/);
+            pages_read_in_row += 1;
+            if (pages_read_in_row >= input_tensor_Wt) {
+                row_offset += output_tensor_Wt;
+                pages_read_in_row = 0;
+            }
+
             uint64_t noc0_dest_noc_addr_second_tile = get_noc_addr(
-                tile_id_start + row_offset + pages_read_in_row + 1, output_addrgen, 0 /*offset*/, 0 /*noc_id*/);
+                tile_id_start + row_offset + pages_read_in_row, output_addrgen, 0 /*offset*/, 0 /*noc_id*/);
+            pages_read_in_row += 1;
+            if (pages_read_in_row >= input_tensor_Wt) {
+                row_offset += output_tensor_Wt;
+                pages_read_in_row = 0;
+            }
 
             uint32_t intermediate_packet_id = my_chip_id + packet_id * ring_size;
             uint32_t intermediate_packet_first_tile_id =
@@ -141,11 +153,6 @@ void kernel_main() {
                 intermediate_page_size,
                 contig_pages_advanced);
             tiles_read += contig_pages_advanced;
-            pages_read_in_row += contig_pages_advanced;
-            if (pages_read_in_row >= input_tensor_Wt) {
-                row_offset += output_tensor_Wt;
-                pages_read_in_row = 0;
-            }
             packet_id++;
         }
         cb_pop_front(cb_forward_id, num_pages_to_read);
