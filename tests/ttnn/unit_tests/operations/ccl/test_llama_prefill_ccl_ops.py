@@ -7,10 +7,16 @@ from tests.ttnn.unit_tests.operations.ccl.test_new_reduce_scatter import run_red
 @pytest.mark.parametrize(
     "num_devices, num_links, ag_output_shape, dim, layout, matmul_output_dim, max_in0_block_w, matmul_weights_dtype, ag_input_dtype, use_bias",
     [
+        # 4k shapes
         (8, 1, [1, 1, 4096, 2048], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
-        #     (8, 1, [1, 1, 4096, 2560], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
-        #     (8, 1, [1, 1, 4096, 7168], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
-        #     (8, 1, [1, 1, 4096, 256], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat16, ttnn.bfloat16, True),
+        (8, 1, [1, 1, 4096, 2560], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
+        (8, 1, [1, 1, 4096, 7168], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
+        (8, 1, [1, 1, 4096, 256], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat16, ttnn.bfloat8_b, True),
+        # 8k shapes
+        (8, 1, [1, 1, 8192, 2048], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
+        (8, 1, [1, 1, 8192, 2560], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
+        (8, 1, [1, 1, 8192, 7168], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat8_b, ttnn.bfloat8_b, True),
+        (8, 1, [1, 1, 8192, 256], 3, ttnn.TILE_LAYOUT, 960, 2, ttnn.bfloat16, ttnn.bfloat16, True),
     ],
 )
 @pytest.mark.parametrize(
@@ -32,10 +38,7 @@ from tests.ttnn.unit_tests.operations.ccl.test_new_reduce_scatter import run_red
 )
 @pytest.mark.parametrize(
     "use_non_fused",
-    [
-        True,
-        # False,
-    ],
+    [True],
 )
 @pytest.mark.parametrize(
     "device_params, use_legacy_allgather, all_gather_topology",
@@ -106,9 +109,14 @@ def test_all_gather_async(
 @pytest.mark.parametrize(
     "num_devices, num_links, rs_input_shape, dim, layout, rs_input_dtype",
     [
+        # 4k shapes
         (8, 1, [1, 1, 4096, 1280], 3, ttnn.TILE_LAYOUT, ttnn.bfloat8_b),
         (8, 1, [1, 1, 4096, 2048], 3, ttnn.TILE_LAYOUT, ttnn.bfloat8_b),
         (8, 1, [1, 1, 4096, 3584], 3, ttnn.TILE_LAYOUT, ttnn.bfloat8_b),
+        # 8k shapes
+        (8, 1, [1, 1, 8192, 1280], 3, ttnn.TILE_LAYOUT, ttnn.bfloat8_b),
+        (8, 1, [1, 1, 8192, 2048], 3, ttnn.TILE_LAYOUT, ttnn.bfloat8_b),
+        (8, 1, [1, 1, 8192, 3584], 3, ttnn.TILE_LAYOUT, ttnn.bfloat8_b),
     ],
 )
 @pytest.mark.parametrize(
