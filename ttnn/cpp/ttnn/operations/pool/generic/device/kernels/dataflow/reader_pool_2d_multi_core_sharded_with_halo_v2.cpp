@@ -53,9 +53,12 @@ void kernel_main() {
     constexpr uint32_t in_cb_id = (reader_id == 1) ? get_compile_time_arg_val(17) : get_compile_time_arg_val(16);
     constexpr uint32_t in_shard_cb_id = get_compile_time_arg_val(18);
     constexpr uint32_t in_reader_indices_cb_id = get_compile_time_arg_val(19);
-    constexpr uint32_t in_scalar_cb_id = get_compile_time_arg_val(20);
-    constexpr bool one_scalar_per_core = get_compile_time_arg_val(23);
-    constexpr uint32_t config_cb_id = get_compile_time_arg_val(24);
+    constexpr uint32_t in_scalar_cb_id_0 = get_compile_time_arg_val(20);
+    constexpr uint32_t in_scalar_cb_id_1 = get_compile_time_arg_val(21);
+    constexpr bool one_scalar_per_core = get_compile_time_arg_val(24);
+    constexpr uint32_t config_cb_id = get_compile_time_arg_val(25);
+    constexpr uint32_t in_scalar_cb_id =
+        split_reader && reader_id == 1 && !one_scalar_per_core ? in_scalar_cb_id_1 : in_scalar_cb_id_0;
 
     const uint32_t in_l1_read_base_addr = get_read_ptr(in_shard_cb_id);
     uint32_t reader_indices_l1_addr = get_read_ptr(in_reader_indices_cb_id);
@@ -68,7 +71,6 @@ void kernel_main() {
     constexpr uint32_t npages_to_reserve = 1;
     uint32_t counter = reader_id;
     uint32_t scalar_index = 0;
-    uint32_t element_index = 0;
     uint32_t scalar_start = 0;
     uint32_t scalar_end = 1;
     uint32_t scalar_value = 0;
@@ -82,30 +84,24 @@ void kernel_main() {
         scalar_start = config_ptr[3 * scalar_index];
         scalar_value = config_ptr[3 * scalar_index + 1];
         scalar_end = config_ptr[3 * scalar_index + 2];
+        scalar_index++;
     }
-    while (counter < reader_nindices || (reader_id == 0 && !one_scalar_per_core && element_index < reader_nindices)) {
-        if constexpr (!one_scalar_per_core && reader_id == 0) {
+    while (counter < reader_nindices) {
+        if constexpr (!one_scalar_per_core) {
             cb_reserve_back(in_scalar_cb_id, 1);
-            if (counter >= scalar_start) {
-                fill_with_val(get_write_ptr(in_scalar_cb_id), TILE_WIDTH, scalar_value >> 16);
-                scalar_index++;
+            while ((counter >= scalar_end) && scalar_end != reader_nindices) {
                 scalar_start = scalar_end;
                 scalar_value = config_ptr[3 * scalar_index + 1];
                 scalar_end = config_ptr[3 * scalar_index + 2];
+                scalar_index++;
             }
+            if (counter == scalar_start || (counter == scalar_start + 1 && counter < scalar_end)) {
+                fill_with_val(get_write_ptr(in_scalar_cb_id), TILE_WIDTH, scalar_value >> 16);
+            }
+
             cb_push_back(in_scalar_cb_id, 1);
-            element_index++;
-            if (counter >= scalar_start) {
-                cb_reserve_back(in_scalar_cb_id, 1);
-                fill_with_val(get_write_ptr(in_scalar_cb_id), TILE_WIDTH, scalar_value >> 16);
-                scalar_index++;
-                scalar_start = scalar_end;
-                scalar_value = config_ptr[3 * scalar_index + 1];
-                scalar_end = config_ptr[3 * scalar_index + 2];
-                cb_push_back(in_scalar_cb_id, 1);
-                element_index++;
-            }
         }
+
         if (counter < reader_nindices || one_scalar_per_core) {
             cb_reserve_back(in_cb_id, npages_to_reserve);
             uint32_t out_l1_write_addr = get_write_ptr(in_cb_id);
