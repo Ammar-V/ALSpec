@@ -91,9 +91,13 @@ TEST(Cluster, TestMeshFullConnectivity) {
     EXPECT_EQ(eth_connections.size(), num_expected_chips)
         << " Expected " << num_expected_chips << " in " << magic_enum::enum_name(cluster_type) << " cluster";
     for (const auto& [chip, connections] : eth_connections) {
+        const auto& soc_desc = cluster.get_soc_desc(chip);
         std::map<chip_id_t, int> num_connections_to_chip;
         for (const auto& [channel, remote_chip_and_channel] : connections) {
-            num_connections_to_chip[std::get<0>(remote_chip_and_channel)]++;
+            tt::umd::CoreCoord logical_active_eth = soc_desc.get_eth_core_for_channel(channel, CoordSystem::LOGICAL);
+            if (cluster.is_ethernet_link_up(chip, logical_active_eth)) {
+                num_connections_to_chip[std::get<0>(remote_chip_and_channel)]++;
+            }
         }
         for (const auto& [other_chip, count] : num_connections_to_chip) {
             EXPECT_EQ(count, num_connections_per_side) << "Chip " << chip << " has " << count << " connections to Chip "
