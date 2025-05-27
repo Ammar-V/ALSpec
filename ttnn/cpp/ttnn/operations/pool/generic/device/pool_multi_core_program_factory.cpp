@@ -30,6 +30,7 @@ static Tensor create_scalar_config_tensor(
     bool ceil_mode,
     uint32_t ceil_pad_h,
     uint32_t ceil_pad_w,
+    bool count_include_pad,
     uint32_t out_nhw_per_core,
     uint32_t num_shards_c,
     CoreRangeSet all_cores,
@@ -72,6 +73,7 @@ static Tensor create_scalar_config_tensor(
                 y,
                 pad_h,
                 pad_w,
+                count_include_pad,
                 num_of_ele,
                 divisor_override);
 
@@ -144,7 +146,6 @@ Pool2D::MultiCore::cached_program_t pool2d_multi_core_sharded_with_halo_v2_impl_
     uint32_t num_shards_c,
     const MemoryConfig& out_mem_config,
     uint32_t nblocks,
-    bool count_include_pad,
     std::optional<int32_t> divisor_override) {
     // This should allocate a DRAM buffer on the device
     IDevice* device = input.device();
@@ -411,11 +412,12 @@ Pool2D::MultiCore::cached_program_t pool2d_multi_core_sharded_with_halo_v2_impl_
             kernel_size_w,
             stride_h,
             stride_w,
-            pad_h,
-            pad_w,
+            pad_h / 2,
+            pad_w / 2,
             ceil_mode,
             ceil_pad_h,
             ceil_pad_w,
+            count_include_pad,
             out_nhw_per_core,
             num_shards_c,
             all_cores,
@@ -646,7 +648,6 @@ Pool2D::MultiCore::cached_program_t Pool2D::MultiCore::create(
         num_shards_c,
         out_mem_config,
         1,
-        count_include_pad,
         divisor_override);
 }
 
