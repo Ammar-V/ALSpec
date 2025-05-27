@@ -250,27 +250,8 @@ write to the same receiver channel.
 // Data structures, types, enums, and constants
 ////////////////////////////////////////////////
 
-// template <size_t OUTPUT_SIZE_ARRAY, size_t INPUT_ARRAY_SIZE>
-// static constexpr auto collect_sender_channel_stream_ids_ordered(
-//     const std::array<uint32_t, INPUT_ARRAY_SIZE>& input_array,
-//     const std::array<uint32_t, OUTPUT_SIZE_ARRAY>& logical_map_array) -> std::array<uint32_t, OUTPUT_SIZE_ARRAY> {
-//     std::array<uint32_t, OUTPUT_SIZE_ARRAY> output_array{};
-//     for (size_t i = 0; i < OUTPUT_SIZE_ARRAY; i++) {
-//         output_array[i] = input_array[logical_map_array[i]];
-//     }
-//     return output_array;
-// }
-
-// TODO: pull this from CT args
-// constexpr std::array<uint32_t, MAX_NUM_SENDER_CHANNELS> sender_channel_free_slots_stream_ids_logical_default = {
-//     0, 1, 2, 3, 4};
-// constexpr auto trimmed_logical_stream_id_map =
-//     take_first_n_elements<NUM_SENDER_CHANNELS, MAX_NUM_SENDER_CHANNELS, uint32_t>(
-//         sender_channel_free_slots_stream_ids_logical_default);
-
 // Defined here because sender_channel_0_free_slots_stream_id does not come from
 // 1d_fabric_constants.hpp
-
 static constexpr std::array<uint32_t, MAX_NUM_SENDER_CHANNELS> sender_channel_free_slots_stream_ids = {
     WorkerToFabricEdmSenderImpl<0>::sender_channel_0_free_slots_stream_id,
     sender_channel_1_free_slots_stream_id,
@@ -282,17 +263,12 @@ static_assert(sender_channel_free_slots_stream_ids[1] == 18);
 static_assert(sender_channel_free_slots_stream_ids[2] == 19);
 static_assert(sender_channel_free_slots_stream_ids[3] == 20);
 static_assert(sender_channel_free_slots_stream_ids[4] == 21);
-// static std::array<uint32_t, MAX_NUM_SENDER_CHANNELS> sender_channel_free_slots_stream_ids_ordered;
 
 static constexpr std::array<uint32_t, NUM_ROUTER_CARDINAL_DIRECTIONS> receiver_channel_free_slots_stream_ids = {
     receiver_channel_0_free_slots_from_east_stream_id,
     receiver_channel_0_free_slots_from_west_stream_id,
     receiver_channel_0_free_slots_from_north_stream_id,
     receiver_channel_0_free_slots_from_south_stream_id};
-
-// static constexpr std::array<uint32_t, NUM_SENDER_CHANNELS> sender_channel_free_slots_stream_ids =
-//     collect_sender_channel_stream_ids_ordered(
-//         sender_channel_free_slots_stream_ids_logical, trimmed_logical_stream_id_map);
 
 /*
  * Tracks receiver channel pointers (from sender side)
@@ -392,7 +368,6 @@ FORCE_INLINE void send_next_data(
         while (internal_::eth_txq_is_busy(DEFAULT_ETH_TXQ)) {
         };
     }
-    reinterpret_cast<volatile uint32_t*>(pkt_header)[sizeof(PACKET_HEADER_TYPE) / sizeof(uint32_t)] = 0x007ea7ea;
     internal_::eth_send_packet_bytes_unsafe(DEFAULT_ETH_TXQ, src_addr, dest_addr, payload_size_bytes);
 
     // Note: We can only advance to the next buffer index if we have fully completed the send (both the payload and sync
@@ -1158,7 +1133,7 @@ void run_fabric_edm_main_loop(
     WriteTransactionIdTracker<RECEIVER_NUM_BUFFERS, NUM_TRANSACTION_IDS, NUM_TRANSACTION_IDS>&
         receiver_channel_1_trid_tracker,
     std::array<uint8_t, num_eth_ports>& port_direction_table,
-    std::array<uint32_t, MAX_NUM_SENDER_CHANNELS>& sender_channel_free_slots_stream_ids_ordered) {
+    std::array<uint32_t, NUM_SENDER_CHANNELS>& local_sender_channel_free_slots_stream_ids_ordered) {
     size_t did_nothing_count = 0;
     *termination_signal_ptr = tt::tt_fabric::TerminationSignal::KEEP_RUNNING;
 
@@ -1216,7 +1191,7 @@ void run_fabric_edm_main_loop(
                 sender_channel_packet_recorders[0],
                 channel_connection_established[0],
                 0,
-                sender_channel_free_slots_stream_ids_ordered[0]);
+                local_sender_channel_free_slots_stream_ids_ordered[0]);
             if constexpr (!dateline_connection) {
                 run_receiver_channel_step<
                     enable_packet_header_recording,
@@ -1271,7 +1246,7 @@ void run_fabric_edm_main_loop(
                 sender_channel_packet_recorders[1],
                 channel_connection_established[1],
                 1,
-                sender_channel_free_slots_stream_ids_ordered[1]);
+                local_sender_channel_free_slots_stream_ids_ordered[1]);
             if constexpr (is_2d_fabric) {
                 run_sender_channel_step<
                     enable_packet_header_recording,
@@ -1288,7 +1263,7 @@ void run_fabric_edm_main_loop(
                     sender_channel_packet_recorders[2],
                     channel_connection_established[2],
                     2,
-                    sender_channel_free_slots_stream_ids_ordered[2]);
+                    local_sender_channel_free_slots_stream_ids_ordered[2]);
                 run_sender_channel_step<
                     enable_packet_header_recording,
                     enable_fabric_counters,
@@ -1304,7 +1279,7 @@ void run_fabric_edm_main_loop(
                     sender_channel_packet_recorders[3],
                     channel_connection_established[3],
                     3,
-                    sender_channel_free_slots_stream_ids_ordered[3]);
+                    local_sender_channel_free_slots_stream_ids_ordered[3]);
             }
             if constexpr (enable_ring_support && !dateline_connection) {
                 run_sender_channel_step<
@@ -1322,14 +1297,14 @@ void run_fabric_edm_main_loop(
                     sender_channel_packet_recorders[NUM_SENDER_CHANNELS - 1],
                     channel_connection_established[NUM_SENDER_CHANNELS - 1],
                     NUM_SENDER_CHANNELS - 1,
-                    sender_channel_free_slots_stream_ids_ordered[NUM_SENDER_CHANNELS - 1]);
+                    local_sender_channel_free_slots_stream_ids_ordered[NUM_SENDER_CHANNELS - 1]);
             }
         }
 
         if (did_something) {
             did_nothing_count = 0;
         } else {
-            if (did_nothing_count++ > SWITCH_INTERVAL) {
+            if (did_nothing_count++ > 1000) {  // SWITCH_INTERVAL) {
                 did_nothing_count = 0;
                 // shouldn't do noc counter sync since we are not incrementing them
                 run_routing_without_noc_sync();
@@ -1343,12 +1318,12 @@ template <size_t NUM_SENDER_CHANNELS, uint8_t SENDER_NUM_BUFFERS>
 void __attribute__((noinline)) wait_for_static_connection_to_ready(
     std::array<tt::tt_fabric::EdmChannelWorkerInterface<SENDER_NUM_BUFFERS>, NUM_SENDER_CHANNELS>&
         local_sender_channel_worker_interfaces,
-    std::array<uint32_t, MAX_NUM_SENDER_CHANNELS>& sender_channel_free_slots_stream_ids_ordered) {
+    std::array<uint32_t, NUM_SENDER_CHANNELS>& local_sender_channel_free_slots_stream_ids_ordered) {
     for (size_t i = 0; i < NUM_SENDER_CHANNELS; i++) {
         if (sender_ch_live_check_skip[i]) {
             while (!connect_is_requested(*local_sender_channel_worker_interfaces[i].connection_live_semaphore));
             establish_edm_connection(
-                local_sender_channel_worker_interfaces[i], sender_channel_free_slots_stream_ids_ordered[i]);
+                local_sender_channel_worker_interfaces[i], local_sender_channel_free_slots_stream_ids_ordered[i]);
         }
     }
 }
@@ -1442,59 +1417,24 @@ void __attribute__((noinline)) init_local_sender_channel_worker_interfaces(
     }
 }
 
-void populate_sender_channel_free_slots_stream_id_ordered_map(
+constexpr uint32_t get_vc0_downstream_sender_channel_free_slots_stream_id() {
+    return sender_channel_free_slots_stream_ids[1 + my_direction];
+}
+constexpr uint32_t get_vc1_downstream_sender_channel_free_slots_stream_id() {
+    return sender_channel_free_slots_stream_ids[sender_channel_free_slots_stream_ids.size() - 1];
+}
+
+void populate_local_sender_channel_free_slots_stream_id_ordered_map(
     uint32_t has_downstream_edm_vc0_buffer_connection,
-    std::array<uint32_t, MAX_NUM_SENDER_CHANNELS>& sender_channel_free_slots_stream_ids_ordered) {
+    std::array<uint32_t, NUM_SENDER_CHANNELS>& local_sender_channel_free_slots_stream_ids_ordered) {
     if constexpr (is_2d_fabric) {
-        for (size_t i = 0; i < MAX_NUM_SENDER_CHANNELS; i++) {
-            sender_channel_free_slots_stream_ids_ordered[i] = std::numeric_limits<uint32_t>::max();
+        for (size_t i = 0; i < NUM_SENDER_CHANNELS; i++) {
+            local_sender_channel_free_slots_stream_ids_ordered[i] = sender_channel_free_slots_stream_ids[i + 1];
         }
-        sender_channel_free_slots_stream_ids_ordered[my_direction] = sender_channel_free_slots_stream_ids[0];
-
-        uint32_t has_downstream_edm = has_downstream_edm_vc0_buffer_connection & 0xF;
-        if (has_downstream_edm_vc0_buffer_connection) {
-            // Only bit 0 is set for 1D
-            // upto 3 bits set for 2D. 0, 1, 2, 3 for East, West, North, South downstream connections.
-            uint32_t has_downstream_edm = has_downstream_edm_vc0_buffer_connection & 0xF;
-            uint32_t edm_index = 0;
-            uint32_t next_available_sender_channel_free_slots_stream_index = 1;
-            while (has_downstream_edm) {
-                if (has_downstream_edm & 0x1) {
-                    auto downstream_direction = edm_index;
-                    sender_channel_free_slots_stream_ids_ordered[edm_index] =
-                        sender_channel_free_slots_stream_ids[next_available_sender_channel_free_slots_stream_index];
-                    next_available_sender_channel_free_slots_stream_index++;
-                }
-                has_downstream_edm >>= 1;
-                edm_index++;
-            }
-        }
-
-        std::array<uint32_t, MAX_NUM_SENDER_CHANNELS> unused;
-        size_t unused_count = 0;
-        for (size_t i = 0; i < sender_channel_free_slots_stream_ids.size(); i++) {
-            bool found = false;
-            for (size_t j = 0; j < sender_channel_free_slots_stream_ids.size(); j++) {
-                if (sender_channel_free_slots_stream_ids_ordered[j] == sender_channel_free_slots_stream_ids[i]) {
-                    found = true;
-                    continue;
-                }
-            }
-            if (!found) {
-                unused[unused_count] = sender_channel_free_slots_stream_ids[i];
-                unused_count++;
-            }
-        }
-        size_t next = 0;
-        for (size_t i = 0; i < MAX_NUM_SENDER_CHANNELS; i++) {
-            if (sender_channel_free_slots_stream_ids_ordered[i] == std::numeric_limits<uint32_t>::max()) {
-                sender_channel_free_slots_stream_ids_ordered[i] = unused[next];
-                next++;
-            }
-        }
+        local_sender_channel_free_slots_stream_ids_ordered[my_direction] = sender_channel_free_slots_stream_ids[0];
     } else {
         for (size_t i = 0; i < NUM_SENDER_CHANNELS; i++) {
-            sender_channel_free_slots_stream_ids_ordered[i] = sender_channel_free_slots_stream_ids[i];
+            local_sender_channel_free_slots_stream_ids_ordered[i] = sender_channel_free_slots_stream_ids[i];
         }
     }
 }
@@ -1530,6 +1470,7 @@ void kernel_main() {
     if constexpr (is_2d_fabric) {
         init_ptr_val<sender_channel_free_slots_stream_ids[3]>(SENDER_NUM_BUFFERS);
         init_ptr_val<sender_channel_free_slots_stream_ids[4]>(SENDER_NUM_BUFFERS);
+        init_ptr_val<vc1_sender_channel_free_slots_stream_id>(SENDER_NUM_BUFFERS);
         init_ptr_val<to_sender_packets_acked_streams[3]>(0);
         init_ptr_val<to_sender_packets_acked_streams[4]>(0);
         init_ptr_val<to_sender_packets_completed_streams[3]>(0);
@@ -1716,7 +1657,7 @@ void kernel_main() {
     //////////////////////////////
     //////////////////////////////
 
-    std::array<uint32_t, MAX_NUM_SENDER_CHANNELS> sender_channel_free_slots_stream_ids_ordered;
+    std::array<uint32_t, NUM_SENDER_CHANNELS> local_sender_channel_free_slots_stream_ids_ordered;
 
     const auto& local_sender_buffer_addresses =
         take_first_n_elements<NUM_SENDER_CHANNELS, MAX_NUM_SENDER_CHANNELS, size_t>(
@@ -1801,17 +1742,8 @@ void kernel_main() {
 
     std::array<tt::tt_fabric::EdmToEdmSender<SENDER_NUM_BUFFERS>, NUM_USED_RECEIVER_CHANNELS>
         downstream_edm_noc_interfaces;
-    // if constexpr (is_2d_fabric) {
-    //     sender_channel_free_slots_stream_ids_ordered =
-    //         initialize_array<MAX_NUM_SENDER_CHANNELS, uint32_t, std::numeric_limits<uint32_t>::max()>();
-    //     sender_channel_free_slots_stream_ids_ordered[my_direction] = sender_channel_free_slots_stream_ids[0];
-    // } else {
-    //     for (size_t i = 0; i < NUM_SENDER_CHANNELS; i++) {
-    //         sender_channel_free_slots_stream_ids_ordered[i] = sender_channel_free_slots_stream_ids[i];
-    //     }
-    // }
-    populate_sender_channel_free_slots_stream_id_ordered_map(
-        has_downstream_edm_vc0_buffer_connection, sender_channel_free_slots_stream_ids_ordered);
+    populate_local_sender_channel_free_slots_stream_id_ordered_map(
+        has_downstream_edm_vc0_buffer_connection, local_sender_channel_free_slots_stream_ids_ordered);
     constexpr auto worker_sender_channel_id = my_direction;
     size_t next_available_sender_channel_free_slots_stream_index = 1;
     if (has_downstream_edm_vc0_buffer_connection) {
@@ -1838,12 +1770,6 @@ void kernel_main() {
                     *reinterpret_cast<volatile uint32_t* const>(teardown_sem_address) = 0;
                 }
                 auto downstream_direction = edm_index;
-                // if constexpr (is_2d_fabric) {
-                //     sender_channel_free_slots_stream_ids_ordered[edm_index] =
-                //         sender_channel_free_slots_stream_ids[next_available_sender_channel_free_slots_stream_index];
-                //     next_available_sender_channel_free_slots_stream_index++;
-                //     ASSERT(edm_index != my_direction);
-                // }
                 auto receiver_channel_free_slots_stream_id =
                     is_2d_fabric ? StreamId{receiver_channel_free_slots_stream_ids[downstream_direction]}
                                  : StreamId{receiver_channel_free_slots_stream_ids[0]};
@@ -1876,8 +1802,9 @@ void kernel_main() {
                     //
                     // We add 1 because sender_channel[0] is for (non-forwarded) traffic from our local chip's NoC, so
                     // we skip that first one. The first forwarded direction is the next one so we start there.
-                    is_2d_fabric ? sender_channel_free_slots_stream_ids_ordered[edm_index]
-                                 : sender_channel_free_slots_stream_ids_ordered[1],
+                    is_2d_fabric
+                        ? get_vc0_downstream_sender_channel_free_slots_stream_id()  // local_sender_channel_free_slots_stream_ids_ordered[my_direction]//edm_index]
+                        : local_sender_channel_free_slots_stream_ids_ordered[1],
 
                     // This is our local stream register for the copy of the downstream router's
                     // free slots
@@ -1893,6 +1820,7 @@ void kernel_main() {
             has_downstream_edm >>= 1;
         }
     }
+
     static_assert(!enable_ring_support || !is_2d_fabric, "2D mode does not yet support ring/torus");
     if constexpr (enable_ring_support) {
         if (has_downstream_edm_vc1_buffer_connection) {
@@ -1911,8 +1839,8 @@ void kernel_main() {
             }
 
             auto downstream_sender_channel_credit_stream_id =
-                is_2d_fabric ? StreamId{sender_channel_free_slots_stream_ids[my_direction]}
-                             : StreamId{sender_channel_free_slots_stream_ids_ordered[2]};
+                is_2d_fabric ? StreamId{vc1_sender_channel_free_slots_stream_id}
+                             : StreamId{local_sender_channel_free_slots_stream_ids_ordered[2]};
             new (&downstream_edm_noc_interfaces[NUM_USED_RECEIVER_CHANNELS - 1])
                 tt::tt_fabric::EdmToEdmSender<SENDER_NUM_BUFFERS>(
                     // persistent_mode -> hardcode to false because for EDM -> EDM
@@ -1950,31 +1878,6 @@ void kernel_main() {
         }
     }
 
-    // if constexpr (is_2d_fabric) {
-    //     std::array<uint32_t, MAX_NUM_SENDER_CHANNELS> unused;
-    //     size_t unused_count = 0;
-    //     for (size_t i = 0; i < sender_channel_free_slots_stream_ids.size(); i++) {
-    //         bool found = false;
-    //         for (size_t j = 0; j < sender_channel_free_slots_stream_ids.size(); j++) {
-    //             if (sender_channel_free_slots_stream_ids_ordered[j] == sender_channel_free_slots_stream_ids[i]) {
-    //                 found = true;
-    //                 continue;
-    //             }
-    //         }
-    //         if (!found) {
-    //             unused[unused_count] = sender_channel_free_slots_stream_ids[i];
-    //             unused_count++;
-    //         }
-    //     }
-    //     size_t next = 0;
-    //     for (size_t i = 0; i < MAX_NUM_SENDER_CHANNELS; i++) {
-    //         if (sender_channel_free_slots_stream_ids_ordered[i] == std::numeric_limits<uint32_t>::max()) {
-    //             sender_channel_free_slots_stream_ids_ordered[i] = unused[next];
-    //             next++;
-    //         }
-    //     }
-    // }
-
     for (uint8_t i = 0; i < NUM_RECEIVER_CHANNELS; i++) {
         new (&local_receiver_channels[i]) tt::tt_fabric::EthChannelBuffer<RECEIVER_NUM_BUFFERS>(
             local_receiver_buffer_addresses[i],
@@ -2004,6 +1907,7 @@ void kernel_main() {
             0,  // For sender channels there is no eth_transaction_ack_word_addr because they don't send acks
             i);
     }
+
     init_local_sender_channel_worker_interfaces(
         local_sender_connection_live_semaphore_addresses,
         local_sender_connection_info_addresses,
@@ -2099,7 +2003,7 @@ void kernel_main() {
 #endif
 
     wait_for_static_connection_to_ready(
-        local_sender_channel_worker_interfaces, sender_channel_free_slots_stream_ids_ordered);
+        local_sender_channel_worker_interfaces, local_sender_channel_free_slots_stream_ids_ordered);
 
     //////////////////////////////
     //////////////////////////////
@@ -2134,7 +2038,7 @@ void kernel_main() {
         receiver_channel_0_trid_tracker,
         receiver_channel_1_trid_tracker,
         port_direction_table,
-        sender_channel_free_slots_stream_ids_ordered);
+        local_sender_channel_free_slots_stream_ids_ordered);
 
     if constexpr (persistent_mode) {
         // we force these values to a non-zero value so that if we run the fabric back to back,

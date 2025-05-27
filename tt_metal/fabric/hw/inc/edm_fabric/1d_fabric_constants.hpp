@@ -18,9 +18,9 @@ constexpr uint32_t DEFAULT_ETH_TXQ = 0;
 
 // STREAM REGISTER ASSIGNMENT
 // senders update this stream
-constexpr uint32_t to_receiver_0_pkts_sent_id = 23;
+constexpr uint32_t to_receiver_0_pkts_sent_id = 0;
 // senders update this stream
-constexpr uint32_t to_receiver_1_pkts_sent_id = 24;
+constexpr uint32_t to_receiver_1_pkts_sent_id = 1;
 // receivers updates the reg on this stream
 constexpr uint32_t to_sender_0_pkts_acked_id = 2;
 // receivers updates the reg on this stream
@@ -62,6 +62,7 @@ constexpr uint32_t sender_channel_1_free_slots_stream_id = 18;
 constexpr uint32_t sender_channel_2_free_slots_stream_id = 19;
 constexpr uint32_t sender_channel_3_free_slots_stream_id = 20;
 constexpr uint32_t sender_channel_4_free_slots_stream_id = 21;
+constexpr uint32_t vc1_sender_channel_free_slots_stream_id = 22;
 
 constexpr size_t MAX_NUM_RECEIVER_CHANNELS = 2;
 constexpr size_t MAX_NUM_SENDER_CHANNELS = 5;
