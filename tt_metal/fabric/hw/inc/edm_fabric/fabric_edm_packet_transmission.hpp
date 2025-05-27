@@ -10,7 +10,6 @@
 #include "fabric_edm_types.hpp"
 #include "tt_metal/fabric/hw/inc/edm_fabric/1d_fabric_constants.hpp"
 #include <cstdint>
-#include "debug/ring_buffer.h"
 
 // If the hop/distance counter equals to the below value, it indicates that it has
 // arrived at (atleast one of) the intended destination(s)
@@ -134,9 +133,7 @@ __attribute__((optimize("jump-tables"))) FORCE_INLINE void execute_chip_unicast_
     }
     switch (noc_send_type) {
         case tt::tt_fabric::NocSendType::NOC_UNICAST_WRITE: {
-            ASSERT(payload_size_bytes > 0);
             const auto dest_address = header.command_fields.unicast_write.noc_address;
-            ASSERT((dest_address & 0xFFFFFFFF) + payload_size_bytes < 1600000);
             noc_async_write_one_packet_with_trid<false, false>(
                 payload_start_address,
                 dest_address,
@@ -271,7 +268,6 @@ FORCE_INLINE void forward_payload_to_downstream_edm(
     // This is a good place to print the packet header for debug if you are trying to inspect packets
     // because it is before we start manipulating the header for forwarding
     update_packet_header_for_next_hop(packet_header, cached_routing_fields);
-
     downstream_edm_interface.template send_payload_non_blocking_from_address_with_trid<
         enable_ring_support,
         tt::tt_fabric::edm_to_downstream_noc,

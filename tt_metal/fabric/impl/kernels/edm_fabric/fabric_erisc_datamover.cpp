@@ -425,7 +425,6 @@ FORCE_INLINE void receiver_send_completion_ack(uint8_t src_id) {
         while (internal_::eth_txq_is_busy(DEFAULT_ETH_TXQ)) {
         };
     }
-    DPRINT << "RX Sending Completions (1)\n";
     remote_update_ptr_val<DEFAULT_ETH_TXQ>(to_sender_packets_completed_streams[src_id], 1);
 }
 
@@ -1304,7 +1303,7 @@ void run_fabric_edm_main_loop(
         if (did_something) {
             did_nothing_count = 0;
         } else {
-            if (did_nothing_count++ > 1000) {  // SWITCH_INTERVAL) {
+            if (did_nothing_count++ > SWITCH_INTERVAL) {
                 did_nothing_count = 0;
                 // shouldn't do noc counter sync since we are not incrementing them
                 run_routing_without_noc_sync();
@@ -1328,6 +1327,11 @@ void __attribute__((noinline)) wait_for_static_connection_to_ready(
     }
 }
 
+// Returns the number of starting credits for the specified sender channel `i`
+// Generally, we will always start with `SENDER_NUM_BUFFERS` of credits,
+// except for channels which service transient/worker connections. Those
+// sender channels use counter based credit schemes so they are initialized
+// to 0.
 template <size_t i>
 constexpr size_t get_credits_init_val() {
     if constexpr (is_2d_fabric) {

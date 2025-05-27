@@ -6,6 +6,7 @@
 
 #include "dataflow_api.h"
 
+#include "risc_common.h"
 #include "tt_metal/hw/inc/ethernet/dataflow_api.h"
 #include "edm_fabric_utils.hpp"
 #include "fabric_edm_packet_header_validate.hpp"
@@ -160,7 +161,7 @@ struct WorkerToFabricEdmSenderImpl {
         this->data_noc_cmd_buf = data_noc_cmd_buf;
         this->sync_noc_cmd_buf = sync_noc_cmd_buf;
 
-        if (I_USE_STREAM_REG_FOR_CREDIT_RECEIVE) {
+        if constexpr (I_USE_STREAM_REG_FOR_CREDIT_RECEIVE) {
             // The EDM is guaranteed to know the number of free slots of the downstream EDM
             // becausen all EDMs are brought up/initialized at the same time
             init_ptr_val(this->worker_credits_stream_id, EDM_NUM_BUFFER_SLOTS);
@@ -427,13 +428,12 @@ struct WorkerToFabricEdmSenderImpl {
     void close_finish() {
         WAYPOINT("FCFW");
         // Need to wait for the ack to teardown notice, from edm
-        // noc_semaphore_wait(this->worker_teardown_addr, 1);
         while (*this->worker_teardown_addr != 1) {
+            invalidate_l1_cache();
         }
         WAYPOINT("FCFD");
         noc_async_write_barrier();
         *(this->worker_teardown_addr) = 0;
-        // WAYPOINT("FCFd");
     }
 
     void close() {
@@ -608,8 +608,7 @@ private:
                 EDM_TO_DOWNSTREAM_NOC,
                 this->data_noc_cmd_buf);
         }
-        post_send_payload_increment_pointers<stateful_api /*ENABLE_STATEFUL_WRITE_CREDIT_TO_DOWNSTREAM_EDM*/, enable_ring_support>(
-            EDM_TO_DOWNSTREAM_NOC);
+        post_send_payload_increment_pointers<stateful_api, enable_ring_support>(EDM_TO_DOWNSTREAM_NOC);
     }
 
     template <EDM_IO_BLOCKING_MODE blocking_mode>

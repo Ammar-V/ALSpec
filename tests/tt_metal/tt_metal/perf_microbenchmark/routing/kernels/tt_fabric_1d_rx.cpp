@@ -35,13 +35,11 @@ void kernel_main() {
     test_results[TT_FABRIC_STATUS_INDEX] = TT_FABRIC_STATUS_STARTED;
 
     // poll for data
-    DPRINT << "Checking packets\n";
     for (uint32_t i = 0; i < num_packets; i++) {
 #ifndef BENCHMARK_MODE
         time_seed = prng_next(time_seed);
         uint32_t expected_val = time_seed + (packet_payload_size_bytes / 16) - 1;
 
-        DPRINT << "Checking for " << (uint32_t)expected_val << " at addr " << (uint32_t)poll_addr << "\n";
         while (expected_val != *poll_addr);
         // while (*poll_addr == 0);
 
@@ -68,5 +66,4 @@ void kernel_main() {
 
     test_results[TT_FABRIC_WORD_CNT_INDEX] = (uint32_t)bytes_received;
     test_results[TT_FABRIC_WORD_CNT_INDEX + 1] = bytes_received >> 32;
-    DPRINT << "teardown\n";
 }

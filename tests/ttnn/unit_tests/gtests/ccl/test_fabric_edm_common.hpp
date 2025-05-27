@@ -551,8 +551,6 @@ bool RunLoopbackTest(
     static constexpr std::size_t edm_buffer_size =
         tt::tt_fabric::FabricEriscDatamoverBuilder::default_packet_payload_size_bytes + PACKET_HEADER_SIZE_BYTES;
 
-    CoreCoord ethernet_core_virtual = CoreCoord{chip_0_edm_builder.my_noc_x, chip_0_edm_builder.my_noc_y};
-    const auto connected_ethernet_channel_id = sender_device->logical_core_from_ethernet_core(ethernet_core_virtual).y;
     auto chip0_worker_fabric_connection = chip_0_edm_builder.build_connection_to_worker_channel();
     ////////////////////////////////////////////////////////////////////////////
     // Build Workers
@@ -1231,7 +1229,6 @@ void setup_test_with_persistent_fabric(
         log_info(tt::LogTest, "Building EDM kernels");
         line_fabric->build_kernels();
         build_and_enqueue(devices, *fabric_programs);
-        // Sleep for 10 seconds
     }
 }
 

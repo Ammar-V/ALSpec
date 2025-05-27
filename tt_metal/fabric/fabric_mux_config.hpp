@@ -182,6 +182,17 @@ struct FabricMuxConfig {
 
         if (channel_type == FabricMuxChannelType::HEADER_ONLY_CHANNEL) {
             stream_id += this->num_full_size_channels;
+            TT_FATAL(
+                stream_id < this->num_header_only_channels,
+                "Invalid channel id for header only channel. Requested channel id: {} but maximum is {}",
+                channel_id,
+                this->num_header_only_channels);
+        } else {
+            TT_FATAL(
+                stream_id < this->num_full_size_channels,
+                "Invalid channel id for full size channel. Requested channel id: {} but maximum is {}",
+                channel_id,
+                this->num_full_size_channels);
         }
 
         return stream_id;

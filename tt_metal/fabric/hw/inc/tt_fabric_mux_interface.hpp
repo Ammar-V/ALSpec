@@ -12,7 +12,6 @@ namespace tt::tt_fabric {
 
 using FabricEndpointStatus = EDMStatus;
 
-// is this the worker -> mux or mux -> fabric connection?
 template <uint8_t FABRIC_MUX_CHANNEL_NUM_BUFFERS = 0>
 WorkerToFabricMuxSender<FABRIC_MUX_CHANNEL_NUM_BUFFERS> build_connection_to_fabric_endpoint(
     uint8_t fabric_mux_x,
