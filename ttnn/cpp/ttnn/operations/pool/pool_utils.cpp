@@ -5,7 +5,6 @@
 #include <limits>
 #include <tt-metalium/bfloat16.hpp>
 #include <tt-metalium/assert.hpp>
-#include <algorithm>
 
 namespace ttnn::operations::pool {
 
@@ -50,8 +49,10 @@ std::vector<ScalarInfo> get_bf16_avg_pool_config_scalars(
                     // Initial kernel window start based on stride and padding
                     int hstart = out_x * stride_h - pad_h;
                     int wstart = out_y * stride_w - pad_w;
-                    int hend = hstart + kernel_h;
-                    int wend = wstart + kernel_w;
+                    int hend = ((hstart + (int)kernel_h) < (int)(in_h + pad_h + ceil_h)) ? hstart + (int)kernel_h
+                                                                                         : (int)(in_h + pad_h + ceil_h);
+                    int wend = ((wstart + (int)kernel_w) < (int)(in_w + pad_w + ceil_w)) ? wstart + (int)kernel_w
+                                                                                         : (int)(in_w + pad_w + ceil_w);
 
                     // Valid region (input-only, without pad)
                     int valid_hstart = (hstart > 0) ? hstart : 0;
@@ -65,15 +66,19 @@ std::vector<ScalarInfo> get_bf16_avg_pool_config_scalars(
                     int pool_area = 0;
 
                     if (count_include_pad) {
-                        // Count how many *actual* kernel elements fall within the padded input bounds
                         pool_area = (hend - hstart) * (wend - wstart);
-                        pool_area -= ((hend > (int)in_h) ? (hend - in_h) : 0) * kernel_w;
-                        pool_area -= ((wend > (int)in_w) ? (wend - in_w) : 0) * kernel_h;
-                        // Remove doubly subtracted corner if both overflows happened
-                        if (hend > (int)in_h && wend > (int)in_w) {
-                            pool_area = (effective_h > 0 && effective_w > 0) ? effective_h * effective_w : 0;
+
+                        int pad_h_over = hend - (int)in_h - (int)pad_h > 0 ? hend - (int)in_h - (int)pad_h : 0;
+                        int pad_w_over = wend - (int)in_w - (int)pad_w > 0 ? wend - (int)in_w - (int)pad_w : 0;
+
+                        pool_area -= pad_h_over * kernel_w;
+                        pool_area -= pad_w_over * kernel_h;
+
+                        if (pad_h_over > 0 && pad_w_over > 0) {
+                            pool_area += pad_h_over * pad_w_over;
                         }
-                        pool_area = std::max(1, pool_area);  // Avoid division by zero
+
+                        pool_area = pool_area > 1 ? pool_area : 1;  // Avoid division by zero);
                     } else {
                         pool_area = (effective_h > 0 && effective_w > 0) ? effective_h * effective_w : 0;
                     }
