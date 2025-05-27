@@ -20,7 +20,6 @@
 #include "ttnn/tensor/shape/shape.hpp"
 #include "ttnn/tensor/storage.hpp"
 #include "ttnn/tensor/tensor.hpp"
-#include "ttnn/tensor/types.hpp"
 
 namespace tt {
 namespace tt_metal {

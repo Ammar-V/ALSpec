@@ -12,7 +12,6 @@
 
 #include "ttnn/tensor/types.hpp"
 #include "ttnn/tensor/layout/alignment.hpp"
-#include "ttnn/tensor/types.hpp"
 
 namespace tt::tt_metal {
 

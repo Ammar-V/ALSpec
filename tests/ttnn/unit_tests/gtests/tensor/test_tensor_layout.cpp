@@ -19,7 +19,6 @@
 #include "ttnn/tensor/layout/page_config.hpp"
 #include "ttnn/tensor/layout/tensor_layout.hpp"
 #include "ttnn/tensor/shape/shape.hpp"
-#include "ttnn/tensor/types.hpp"
 #include "ttnn/types.hpp"
 
 using namespace ttnn;

@@ -19,7 +19,6 @@
 #include "ttnn/tensor/shape/shape.hpp"
 #include "ttnn/tensor/storage.hpp"
 #include "ttnn/tensor/tensor.hpp"
-#include "ttnn/tensor/types.hpp"
 
 using tt::tt_metal::DataType;
 using tt::tt_metal::Layout;

@@ -10,7 +10,6 @@
 #include "ttnn/tensor/layout/alignment.hpp"
 #include "ttnn/tensor/layout/page_config.hpp"
 #include "ttnn/tensor/shape/shape.hpp"
-#include "ttnn/tensor/types.hpp"
 
 namespace tt::tt_metal {
 
