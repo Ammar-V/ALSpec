@@ -20,7 +20,7 @@
 #include "tt_metal/fabric/hw/inc/edm_fabric/fabric_connection_manager.hpp"
 #include "cpp/ttnn/operations/ccl/common/interpreter_backends/kernel_common/io_descriptors.hpp"
 #include "cpp/ttnn/operations/ccl/common/interpreter_backends/kernel_common/noc_addr.hpp"
-#include "api/ttnn/tensor/enum_types.hpp"
+#include "api/ttnn/tensor/types.hpp"
 #include <cstdint>
 #include <utility>
 

@@ -20,7 +20,7 @@
 #include <tt_stl/reflection.hpp>
 #include <tt_stl/span.hpp>
 #include "ttnn/distributed/distributed_tensor_config.hpp"
-#include "ttnn/tensor/enum_types.hpp"
+#include "ttnn/tensor/types.hpp"
 
 #include "ttnn/tensor/shape/shape.hpp"
 
@@ -74,6 +74,8 @@ enum class StorageType {
     DEVICE = 1,
     MULTI_DEVICE_HOST = 4,  // host storage for multi-device context
 };
+
+enum class Layout { ROW_MAJOR = 0, TILE = 1, INVALID = 2 };
 
 tt::DataFormat datatype_to_dataformat_converter(DataType datatype);
 
@@ -157,6 +159,8 @@ std::ostream& operator<<(std::ostream& os, const MemoryConfig& config);
 
 bool operator==(const MemoryConfig& config_a, const MemoryConfig& config_b);
 bool operator!=(const MemoryConfig& config_a, const MemoryConfig& config_b);
+
+std::ostream& operator<<(std::ostream& os, const tt::tt_metal::Layout& layout);
 
 }  // namespace tt_metal
 }  // namespace tt

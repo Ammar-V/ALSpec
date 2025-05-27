@@ -207,7 +207,7 @@ class CMakeBuild(build_ext):
             ]
         ttnn_patterns = [
             # These weren't supposed to be in the JIT API, but one file currently is
-            "api/ttnn/tensor/enum_types.hpp",
+            "api/ttnn/tensor/types.hpp",
         ]
         ttnn_cpp_patterns = [
             "ttnn/deprecated/**/kernels/**/*",

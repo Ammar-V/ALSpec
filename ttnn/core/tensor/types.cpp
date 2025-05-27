@@ -111,6 +111,15 @@ std::ostream& operator<<(std::ostream& os, const MemoryConfig& config) {
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const tt::tt_metal::Layout& layout) {
+    switch (layout) {
+        case Layout::ROW_MAJOR: return os << "Row Major";
+        case Layout::TILE: return os << "Tile";
+        case Layout::INVALID: return os << "Invalid";
+        default: return os << "Unknown layout";
+    }
+}
+
 }  // namespace tt::tt_metal
 
 nlohmann::json tt::stl::json::to_json_t<tt::tt_metal::MemoryConfig>::operator()(

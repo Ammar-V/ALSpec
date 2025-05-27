@@ -10,7 +10,7 @@
 #include <tt-metalium/shape2d.hpp>
 #include <tt-metalium/tile.hpp>
 
-#include "ttnn/tensor/enum_types.hpp"
+#include "ttnn/tensor/types.hpp"
 #include "ttnn/tensor/layout/alignment.hpp"
 #include "ttnn/tensor/types.hpp"
 
