@@ -7,7 +7,7 @@
 #include "compute_kernel_api/reduce.h"
 #include "compute_kernel_api/pack_untilize.h"
 
-#define DEBUG_PRINT 1
+#define DEBUG_PRINT 0
 
 #if DEBUG_PRINT == 1
 #include "debug/dprint.h"
@@ -107,7 +107,7 @@ void MAIN {
         }
         // perform the reduction over the either whole or partial chunk N
         reduce_h_fused<partial_iter_output_tiles, is_partial_tile, split_reader, window_size_hw>(
-               in_cb_id_0, in_cb_id_1, curr_scalar_cb_id, i, out_cb_id);
+            in_cb_id_0, in_cb_id_1, curr_scalar_cb_id, i, out_cb_id);
         if constexpr (!one_scalar_per_core) {
             cb_pop_front(curr_scalar_cb_id, 1);
         }
