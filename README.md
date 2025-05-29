@@ -1,3 +1,57 @@
+# 🚀 Attention-Level Speculation (ALSpec)
+
+This fork contains the implementation accompanying our paper:
+
+> **Attention-Level Speculation**  
+> Authors: Jack Cai, Ammar Vora, Randolph Zhang, Mark O'Conner, Mark C. Jeffrey.  
+> [Conference Paper]() (Link Coming Soon!)
+
+---
+
+As Large Language Models (LLMs) scale in size and context length, inference latency becomes a bottleneck. Traditional tensor and data parallelism approaches struggle to scale efficiently across multiple devices.
+
+**Attention-Level Speculation (ALSpec)** introduces a novel speculative execution mechanism that predicts the outputs of self-attention layers. This allows overlapping attention and non-attention computations—unlocking parallelism across layers that were previously executed sequentially. As a result, ALSpec achieves:
+
+- **Up to 5× reduction** in attention latency at 128K sequence length
+- **Up to 1.65× improvement** in end-to-end decode latency at large sequence lengths
+- Maintains model quality, even with substantial attention approximation
+- Proof-of-concept demonstrated on real hardware using **Tenstorrent’s Wormhole&trade; n300** platform
+
+---
+
+### 🔧 About This Repository
+
+This is a fork of [TT-Metalium&trade;](https://github.com/tenstorrent/tt-metal), the open-source software stack used for high-performance ML inference on Tenstorrent hardware. This fork provides an example implementation of **ALSpec**, designed to demonstrate the feasibility of speculative self-attention on real silicon.
+
+> **Note**: This proof-of-concept targets a **two-device system** and currently does not integrate with tensor parallelism. Due to on-chip memory constraints, the maximum tested context length in this implementation is **32K**.
+
+#### Key Additions in This Fork
+
+- 🧠 **ALSpec end-to-end demo**:
+  - Llama-3.1-8B-Instruct integrated with ALSpec
+  - Runs on a dual-device Wormhole&trade; n300 setup
+  - Enabled via the `ALSpec` class
+- ⚙️ `ttnn.experimental.speculative_scaled_dot_product_attention_decode`:
+  - Speculative flash-attention kernel implementation for Tenstorrent hardware
+- 🔄 `ttnn.swap_tensor`:
+  - Custom CCL operation to synchronize residual and priority tensors across devices
+- 🔧 `device.set_speculation_mode(...)`:
+  - Runtime modification enabling **static graph dynamic concurrency (SGDC)** with **priority gating**
+
+---
+
+### 📊 Results
+
+
+
+---
+
+<br></br>
+
+_The original TT-Metalium&trade; README follows below._
+
+
+
 [![tt-metal CI](https://github.com/tenstorrent/tt-metal/actions/workflows/all-post-commit-workflows.yaml/badge.svg)](https://github.com/tenstorrent/tt-metal/actions/workflows/all-post-commit-workflows.yaml)
 
 <div align="center">
